@@ -148,5 +148,102 @@ function App() {
 export default App;
 uvicorn main:app --reload
 npm start
+      ┌─────────────────────────┐
+                │   Endpoint / Sensors    │
+                │ (EDR, Firewall, IDS)    │
+                └───────────┬─────────────┘
+                            ↓
+                ┌─────────────────────────┐
+                │    Log Ingestion API    │
+                │  (mTLS + Token Auth)    │
+                └───────────┬─────────────┘
+                            ↓
+                ┌─────────────────────────┐
+                │  Kafka Event Streaming  │
+                └───────────┬─────────────┘
+                            ↓
+        ┌────────────────────────────────────────┐
+        │  Real-Time Processing Cluster         │
+        │ (Flink / Spark Streaming)             │
+        └───────────┬─────────────┬─────────────┘
+                    ↓             ↓
+        ┌─────────────────┐  ┌──────────────────┐
+        │ Feature Store   │  │ Threat Intelligence│
+        │ (Redis / Feast) │  │ Enrichment Engine  │
+        └─────────┬───────┘  └──────────┬───────┘
+                  ↓                     ↓
+        ┌────────────────────────────────────────┐
+        │      ML Detection Microservices        │
+        │ IsolationForest / LSTM / GNN           │
+        └───────────┬────────────────────────────┘
+                    ↓
+        ┌─────────────────────────┐
+        │  Threat Scoring Engine  │
+        └───────────┬─────────────┘
+                    ↓
+        ┌─────────────────────────┐
+        │    SOC Dashboard        │
+        │  (Role-Based Access)    │
+        └─────────────────────────┘
+
+Risk Score = 
+  (Anomaly Score × 0.4)
++ (Threat Intel Match × 0.3)
++ (Behavior Deviation × 0.2)
++ (Privilege Level × 0.1)
+                 ┌─────────────────────────┐
+                 │   External Sensors      │
+                 │ (EDR, IDS, Firewall)    │
+                 └───────────┬─────────────┘
+                             ↓
+                 ┌─────────────────────────┐
+                 │  API Gateway (mTLS)     │
+                 └───────────┬─────────────┘
+                             ↓
+                 ┌─────────────────────────┐
+                 │ Kafka Event Bus Cluster │
+                 └───────────┬─────────────┘
+                             ↓
+        ┌─────────────────────────────────────────────┐
+        │              Processing Layer               │
+        └─────────────────────────────────────────────┘
+          ↓             ↓             ↓             ↓
+  ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐
+  │ Enrichment │ │ Feature     │ │ ML Inference│ │ Rule Engine │
+  │ Service    │ │ Engineering │ │ Service     │ │ Service     │
+  └──────┬─────┘ └──────┬─────┘ └──────┬─────┘ └──────┬─────┘
+         ↓              ↓              ↓              ↓
+               ┌────────────────────────────┐
+               │   Threat Scoring Service   │
+               └────────────┬───────────────┘
+                            ↓
+                 ┌─────────────────────────┐
+                 │  Alerting Microservice  │
+                 └────────────┬────────────┘
+                              ↓
+                 ┌─────────────────────────┐
+                 │   SOC Dashboard (UI)    │
+                 └─────────────────────────┘
+bytes_zscore
+login_fail_rate_5min
+hour_of_day
+geo_distance_change
+privilege_weight
+event_frequency
+feature_vectors
+anomaly_scores
+Anomaly score
++ Threat intel weight
++ Privilege level
++ Asset sensitivity
++ Historical risk
+aquila-trace-cluster
+│
+├── namespace: ingestion
+├── namespace: processing
+├── namespace: ml
+├── namespace: dashboard
+├── namespace: monitoring
+
 
 
