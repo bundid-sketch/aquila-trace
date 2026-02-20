@@ -244,6 +244,157 @@ aquila-trace-cluster
 ├── namespace: ml
 ├── namespace: dashboard
 ├── namespace: monitoring
+aquila_trace/
+│
+├── app/
+│   ├── main.py
+│   ├── database.py
+│   ├── models.py
+│   ├── auth.py
+│   ├── anomaly.py
+│   ├── scoring.py
+│   ├── alerts.py
+│   └── config.py
+│
+├── simulate_logs.py
+├── requirements.txt
+├── .env
+└── README.md
+pip install python-dotenv
+SECRET_KEY=supersecretkey123
+MONGO_URI=mongodb://localhost:27017
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+SECRET_KEY = os.getenv("SECRET_KEY")
+MONGO_URI = os.getenv("MONGO_URI")
+from pymongo import MongoClient
+from .config import MONGO_URI
+
+client = MongoClient(MONGO_URI)
+db = client["aquila_trace"]
+
+users_collection = db["users"]
+logs_collection = db["logs"]
+alerts_collection = db["alerts"]
+from pydantic import BaseModel
+from typing import Optional
+
+class User(BaseModel):
+    username: str
+    password: str
+    role: str = "analyst"  # analyst or admin
+
+class Log(BaseModel):
+    source_ip: str
+    event_type: str
+    bytes_transferred: int
+    timestamp: str
+    from jose import jwt, JWTError
+from passlib.context import CryptContext
+from datetime import datetime, timedelta
+from fastapi import Depends, HTTPException
+from fastapi.security import OAuth2PasswordBearer
+from .config import SECRET_KEY
+
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+
+def hash_password(password):
+    return pwd_context.hash(password)
+
+def verify_password(plain, hashed):
+    return pwd_context.verify(plain, hashed)
+
+def create_access_token(data: dict):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_token(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+        def detect_anomaly(bytes_transferred: int):
+    if bytes_transferred > 50000000:
+        return 0.95
+    elif bytes_transferred > 10000000:
+        return 0.75
+    elif bytes_transferred < 1000:
+        return 0.60
+    return 0.10
+    def calculate_risk(anomaly_score, event_type):
+    weight = 1.0
+def calculate_risk(anomaly_score, event_type):
+    weight = 1.0
+
+    if event_type == "login_failed":
+        weight = 1.2
+    elif event_type == "port_scan":
+        weight = 1.5
+    elif event_type == "file_download":
+        weight = 1.3
+
+    risk = anomaly_score * 100 * weight
+    return min(int(risk), 100)
+    from fastapi import FastAPI, Depends
+from .models import User, Log
+from .database import users_collection, logs_collection
+from .auth import hash_password, verify_password, create_access_token, verify_token
+from .anomaly import detect_anomaly
+from .scoring import calculate_risk
+from .alerts import create_alert
+
+app = FastAPI()
+
+@app.post("/register")
+def register(user: User):
+    users_collection.insert_one({
+        "username": user.username,
+        "password": hash_password(user.password),
+        "role": user.role
+    })
+    return {"message": "User created"}
+
+@app.post("/login")
+def login(user: User):
+    db_user = users_collection.find_one({"username": user.username})
+    if not db_user or not verify_password(user.password, db_user["password"]):
+        return {"error": "Invalid credentials"}
+
+    token = create_access_token({
+        "sub": user.username,
+        "role": db_user["role"]
+    })
+
+    return {"access_token": token}
+
+@app.post("/ingest-log")
+def ingest_log(log: Log, user=Depends(verify_token)):
+    anomaly_score = detect_anomaly(log.bytes_transferred)
+    risk_score = calculate_risk(anomaly_score, log.event_type)
+
+    log_data = log.dict()
+    log_data["risk_score"] = risk_score
+    logs_collection.insert_one(log_data)
+
+    create_alert(log_data, risk_score)
+
+    return {"risk_score": risk_score}
+
+@app.get("/alerts")
+def get_alerts(user=Depends(verify_token)):
+    return list(users_collection.database["alerts"].find({}, {"_id": 0}))
+    uvicorn app.main:app --reload
+    http://127.0.0.1:8000/docs
 
 
 
