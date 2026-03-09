@@ -1,8 +1,10 @@
 fastapi
 uvicorn
-pymongo
-passlib[bcrypt]
-python-jose
-python-dotenv
 pandas
-requests
+numpy
+scikit-learn
+networkx
+plotly
+dash
+xgboost
+pydantic
