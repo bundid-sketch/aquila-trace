@@ -1,0 +1,18 @@
+aquila-trace
+│
+├── app
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   ├── database.py
+│   ├── models.py
+│   ├── auth.py
+│   ├── anomaly.py
+│   ├── scoring.py
+│   └── alerts.py
+│
+├── simulate_logs.py
+├── requirements.txt
+├── README.md
+├── .env
+└── .gitignore
