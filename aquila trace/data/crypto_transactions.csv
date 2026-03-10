@@ -1,0 +1,7 @@
+tx_id,sender,receiver,amount
+1,W1,W2,500
+2,W2,W3,1200
+3,W3,W4,3000
+4,W4,W5,700
+5,W5,W6,900
+6,W6,W1,1500

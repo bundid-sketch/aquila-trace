@@ -1,0 +1,7 @@
+sender,receiver,amount,country
+W1,W2,500,KE
+W2,W3,1200,KE
+W3,W4,3000,TZ
+W4,W5,700,KE
+W5,W6,900,UG
+W6,W1,1500,KE
