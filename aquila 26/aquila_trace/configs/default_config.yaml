@@ -1,0 +1,127 @@
+"""Configuration file for AquilaTrace - Customize as needed."""
+
+ml:
+  supervised_models:
+    - xgboost
+    - lightgbm
+    - random_forest
+    - neural_network
+  unsupervised_models:
+    - dbscan
+    - hdbscan
+    - isolation_forest
+    - one_class_svm
+  feature_selection_method: "mutual_information"
+  cross_validation_folds: 5
+  test_split_ratio: 0.2
+  random_state: 42
+  batch_size: 32
+  learning_rate: 0.001
+  epochs: 100
+  early_stopping_patience: 10
+  xgboost_params:
+    max_depth: 8
+    learning_rate: 0.1
+    n_estimators: 200
+  lightgbm_params:
+    num_leaves: 31
+    learning_rate: 0.05
+    n_estimators: 200
+
+graph:
+  gnn_models:
+    - gcn
+    - gat
+    - rgcn
+    - temporal_gnn
+  embedding_dim: 256
+  num_layers: 3
+  dropout_rate: 0.2
+  aggregation: "mean"
+  use_attention: true
+  temporal_window_size: 30
+
+nlp:
+  transformer_models:
+    - bert
+    - roberta
+    - distilbert
+    - finbert
+    - sbert
+  embedding_model: "sentence-transformers/all-MiniLM-L6-v2"
+  max_sequence_length: 512
+  batch_size: 32
+  num_topics: 50
+  min_language_confidence: 0.7
+  supported_languages:
+    - en
+    - ar
+    - fr
+    - sw
+    - ha
+    - yo
+    - ig
+
+blockchain:
+  supported_chains:
+    - bitcoin
+    - ethereum
+    - ripple
+    - monero
+  clustering_algorithm: dbscan
+  fingerprint_feature_count: 100
+  mixer_detection_threshold: 0.85
+  address_reuse_detection: true
+  transaction_timeout_minutes: 60
+  known_bad_addresses: []
+
+database:
+  postgres_url: "postgresql://user:password@localhost/aquila_trace"
+  redis_url: "redis://localhost:6379/0"
+  mongodb_url: "mongodb://localhost:27017"
+  pool_size: 10
+  max_overflow: 20
+  echo: false
+
+api:
+  host: 0.0.0.0
+  port: 8000
+  workers: 4
+  reload: false
+  enable_cors: true
+  enable_auth: true
+  jwt_secret: "your-secret-key-change-in-production"
+  api_version: v1
+
+# Feature flags
+features:
+  enable_anomaly_detection: true
+  enable_entity_linking: true
+  enable_link_prediction: true
+  enable_blockchain_analysis: true
+  enable_nlp_analysis: true
+  enable_graph_analysis: true
+  enable_caching: true
+  enable_monitoring: true
+
+# Logging configuration
+logging:
+  level: INFO
+  format: json
+  file_rotation_mb: 10
+  backup_count: 10
+  console_output: true
+  file_output: true
+
+# Environment-specific configurations
+development:
+  debug: true
+  log_level: DEBUG
+  database:
+    echo: true
+
+production:
+  debug: false
+  log_level: WARNING
+  api:
+    enable_cors: false

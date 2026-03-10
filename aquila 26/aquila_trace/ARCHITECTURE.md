@@ -1,0 +1,485 @@
+# AquilaTrace Architecture
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Client Applications                       │
+│              (Web Apps, Mobile, External Systems)               │
+└────────────────────────────┬────────────────────────────────────┘
+                             │
+                    ┌────────▼─────────┐
+                    │   REST API (v1)  │
+                    │    FastAPI       │
+                    └────────┬─────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        │                    │                    │
+        │                    │                    │
+   ┌────▼─────┐      ┌──────▼──────┐      ┌──────▼──────┐
+   │ Auth &   │      │ Routing &   │      │ Error       │
+   │ Validation│      │ Middleware  │      │ Handling    │
+   └────┬─────┘      └──────┬──────┘      └──────┬──────┘
+        │                    │                    │
+        └────────────────────┼────────────────────┘
+                             │
+              ┌──────────────▼──────────────┐
+              │   Orchestration Engine      │
+              │   (Workflow Coordination)   │
+              └──────────────┬──────────────┘
+                             │
+        ┌────────────────────┼────────────────────────────┐
+        │                    │                            │
+        ▼                    ▼                            ▼
+┌──────────────┐      ┌──────────────┐          ┌─────────────────┐
+│   ML Engine  │      │  Graph Engine│          │  NLP Engine     │
+│              │      │   (GNN)      │          │                 │
+│ • XGBoost    │      │              │          │ • BERT          │
+│ • LightGBM   │      │ • GCN        │          │ • FinBERT       │
+│ • RF         │      │ • GAT        │          │ • Sentence-BERT │
+│ • Neural Net │      │ • RGCN       │          │ • spaCy NER     │
+│ • Isolation  │      │              │          │ • Text Class    │
+│ • HDBSCAN    │      │ Features:    │          │                 │
+│ • OneClass   │      │ • Hub detect │          │ Features:       │
+│   SVM        │      │ • Link pred  │          │ • Entity extract│
+│              │      │ • Clustering │          │ • Sentiment     │
+│ Features:    │      │ • Entity link│          │ • Classification│
+│ • Supervised │      │              │          │ • Similarity    │
+│ • Unsupervs  │      │              │          │                 │
+│ • Ensemble   │      │              │          │                 │
+└──────┬───────┘      └──────┬───────┘          └────────┬────────┘
+       │                     │                          │
+       └─────────────────────┼──────────────────────────┘
+                             │
+                    ┌────────▼──────────┐
+                    │ Blockchain Engine │
+                    │                   │
+                    │ • Address Analysis│
+                    │ • Mixer Detection │
+                    │ • Smurfing Check  │
+                    │ • Flow Tracing    │
+                    │ • Clustering      │
+                    │ • Risk Scoring    │
+                    └────────┬──────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        │                    │                    │
+        ▼                    ▼                    ▼
+┌──────────────┐      ┌──────────────┐    ┌──────────────┐
+│Data Pipeline │      │Feature Eng   │    │Normalization │
+│              │      │              │    │              │
+│ • Validation │      │ • Temporal   │    │ • Standard   │
+│ • Cleaning   │      │ • Transactns │    │ • MinMax     │
+│ • Transform  │      │ • Entity     │    │ • Robust     │
+│              │      │ • Network    │    │              │
+└──────┬───────┘      └──────┬───────┘    └──────┬───────┘
+       │                     │                   │
+       └─────────────────────┼───────────────────┘
+                             │
+        ┌────────────────────┼────────────────────┐
+        │                    │                    │
+        ▼                    ▼                    ▼
+┌──────────────┐      ┌──────────────┐    ┌──────────────┐
+│ PostgreSQL   │      │    Redis     │    │  MongoDB     │
+│              │      │              │    │              │
+│ • Structured │      │ • Cache      │    │ • Documents  │
+│   Data       │      │ • Sessions   │    │ • Logs       │
+│ • Transactions│      │ • Queues     │    │ • Metadata   │
+└──────────────┘      └──────────────┘    └──────────────┘
+```
+
+## Data Flow Pipeline
+
+```
+Raw Data Sources
+    │
+    ├─ Transaction Data (CSV/JSON)
+    ├─ Text Data (messages, chats)
+    ├─ Blockchain Data (chains)
+    └─ Entity Data (persons, orgs)
+    │
+    ▼
+┌─────────────────────┐
+│  Data Validation    │
+│  • Schema check     │
+│  • Type check       │
+│  • Quality check    │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│  Data Cleaning      │
+│  • Remove nulls     │
+│  • Remove duplicates│
+│  • Outlier removal  │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ Feature Engineering │
+│  • Temporal         │
+│  • Entity-level     │
+│  • Network-level    │
+│  • Behavioral       │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ Normalization       │
+│  • Scaling          │
+│  • Encoding         │
+│  • Vectorization    │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ ML Models Training  │
+│  • Supervised       │
+│  • Unsupervised     │
+│  • Ensemble         │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ Predictions/Results │
+│  • Risk scores      │
+│  • Anomalies        │
+│  • Classifications  │
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
+│ Result Storage      │
+│  • Database         │
+│  • Cache            │
+│  • Logs             │
+└─────────────────────┘
+```
+
+## ML Model Pipeline
+
+```
+    Training Data
+         │
+         ▼
+    ┌─────────────┐
+    │ Supervised  │
+    │  Learning   │
+    └────┬────────┘
+         │
+    ┌────┴────────────────────────────┐
+    │                                 │
+    ▼                                 ▼
+┌────────────┐                  ┌────────────┐
+│ XGBoost    │                  │ LightGBM   │
+│ Accuracy:  │                  │ Accuracy:  │
+│   94%      │                  │   92%      │
+└────┬───────┘                  └────┬───────┘
+     │                              │
+     └──────────────┬───────────────┘
+                    │
+                    ▼
+         ┌────────────────────┐
+         │ Random Forest      │
+         │ Accuracy: 91%      │
+         └────┬───────────────┘
+              │
+              ▼
+         ┌──────────────┐
+         │ Neural Net   │
+         │ Acc: 91%     │
+         └────┬─────────┘
+              │
+    ┌─────────┴──────────┐
+    │ Ensemble Voting    │
+    │ Final Accuracy:94% │
+    └────────┬───────────┘
+             │
+             ▼
+    ┌────────────────────┐
+    │ Predictions        │
+    │ • Classification   │
+    │ • Probability      │
+    └────────────────────┘
+```
+
+## Graph Neural Network Architecture
+
+```
+Input: Financial Network Graph
+         │
+         ├─ Entities:
+         │  • Persons
+         │  • Wallets
+         │  • Merchants
+         │  • Organizations
+         │
+         ├─ Relationships:
+         │  • owns
+         │  • transfers_to
+         │  • connects_to
+         │  • deposits_to
+         │
+         └─ Attributes:
+            • Amount
+            • Timestamp
+            • Location
+            │
+            ▼
+    ┌─────────────────┐
+    │  GCN/GAT Model  │
+    │  (3 layers)     │
+    │  (256 dims)     │
+    └────────┬────────┘
+             │
+    ┌────────┴──────────────┐
+    │                       │
+    ▼                       ▼
+┌────────────────┐   ┌─────────────────┐
+│ Hub Detection  │   │ Link Prediction │
+│ Centrality     │   │ Future edges    │
+│ Measures       │   │                 │
+└────────┬───────┘   └────────┬────────┘
+         │                    │
+         ▼                    ▼
+   Top 20 Hubs      Predicted Future
+                      Network Edges
+         │
+         └──────────┬──────────┐
+                    │          │
+                    ▼          ▼
+            ┌────────────────────┐
+            │ Suspicious Cluster │
+            │ Detection          │
+            │ Similarity > 0.7   │
+            └────────────────────┘
+```
+
+## NLP Processing Pipeline
+
+```
+Raw Text Input
+    │
+    ├─ Transaction Notes
+    ├─ SMS Messages
+    ├─ Social Media
+    ├─ Dark Web Chatter
+    └─ Email/Documents
+    │
+    ▼
+┌──────────────────┐
+│ Language Detection│
+│ (7+ languages)   │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Text Cleaning    │
+│ • Remove noise   │
+│ • Normalize      │
+│ • Tokenize       │
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ NER (spaCy)      │
+│ Extract:         │
+│ • Persons        │
+│ • Organizations  │
+│ • Money amounts  │
+│ • Locations      │
+└────────┬─────────┘
+         │
+    ┌────┴─────────────────┐
+    │                      │
+    ▼                      ▼
+┌────────────────┐  ┌──────────────────┐
+│ Embeddings     │  │ Classification   │
+│ • BERT         │  │ • Scam detection │
+│ • FinBERT      │  │ • Propaganda     │
+│ • Sentence-BERT│  │ • Threat level   │
+└────────┬───────┘  └────────┬────────┘
+         │                   │
+         └────────┬──────────┘
+                  │
+                  ▼
+         ┌────────────────────┐
+         │ Semantic Similarity│
+         │ • Text clustering  │
+         │ • Pattern matching │
+         └────────────────────┘
+```
+
+## Blockchain Analysis Engine
+
+```
+Blockchain Networks
+(Bitcoin/Ethereum/Ripple)
+         │
+         ▼
+┌──────────────────┐
+│ Address Collection│
+│ & Feature Ext.   │
+└────────┬─────────┘
+         │
+         ├─ Fingerprinting
+         │  • Transaction patterns
+         │  • Temporal behavior
+         │  • Amount patterns
+         │
+         └─ Profile Building
+            • Balance
+            • tx_count
+            • First/last seen
+            │
+            ▼
+    ┌──────────────────┐
+    │ Risk Scoring     │
+    │ • Frequency      │
+    │ • Volume         │
+    │ • Connections    │
+    └────────┬─────────┘
+             │
+    ┌────────┴──────────────┐
+    │                       │
+    ▼                       ▼
+┌────────────────┐  ┌─────────────────┐
+│ Mixer Detection│  │ Smurfing Check  │
+│ (Deep Learning)│  │ (Coordination)  │
+│ 85% Accuracy  │  │ Pattern Match   │
+└────────┬───────┘  └─────────┬───────┘
+         │                    │
+         └────────┬───────────┘
+                  │
+                  ▼
+         ┌────────────────────┐
+         │ Address Clustering │
+         │ Common Input/Output│
+         │ Heuristic          │
+         └────────┬───────────┘
+                  │
+                  ▼
+         ┌────────────────────┐
+         │ Flow Tracing       │
+         │ Multi-hop Analysis │
+         │ Configurable Depth │
+         └────────────────────┘
+```
+
+## Component Dependencies
+
+```
+src/
+├── core/
+│   ├── config.py          ◄─── Used by: everything
+│   ├── logger.py          ◄─── Used by: everything
+│   └── exceptions.py      ◄─── Used by: everything
+│
+├── ml/
+│   └── __init__.py        ◄─── Used by: api, orchestrator
+│       ├─ Depends: sklearn, torch, xgb, lightgbm
+│
+├── graph/
+│   └── __init__.py        ◄─── Used by: api, orchestrator
+│       ├─ Depends: torch-geometric, networkx, torch
+│
+├── nlp/
+│   └── __init__.py        ◄─── Used by: api, orchestrator
+│       ├─ Depends: transformers, spacy, sentence-transformers
+│
+├── blockchain/
+│   └── __init__.py        ◄─── Used by: api, orchestrator
+│       ├─ Depends: networkx, numpy
+│
+├── data/
+│   └── __init__.py        ◄─── Used by: ml, api, orchestrator
+│       ├─ Depends: pandas, sklearn, featuretools
+│
+└── api/
+    └── __init__.py        ◄─── Entry point
+        ├─ Depends: fastapi, all other modules
+        ├─ Orchestrates: ml, graph, nlp, blockchain, data
+```
+
+## Request Flow
+
+```
+Client Request
+    │
+    ▼
+FastAPI Router
+    │
+    ├─ /transaction/analyze
+    ├─ /entity/risk-assessment
+    ├─ /text/analyze
+    ├─ /blockchain/address-analysis
+    └─ /anomalies/detect
+    │
+    ▼
+Authentication
+    │
+    ▼
+Input Validation (Pydantic)
+    │
+    ▼
+Orchestrator.analyze_*()
+    │
+    ├─ Data Pipeline (process data)
+    │  │
+    │  ├─ ML Models (predictions)
+    │  ├─ Graph Models (analysis)
+    │  ├─ NLP Models (text analysis)
+    │  └─ Blockchain (address analysis)
+    │
+    ▼
+Result Aggregation
+    │
+    ▼
+Response Serialization (JSON)
+    │
+    ▼
+Database/Cache Storage
+    │
+    ▼
+Client Response
+```
+
+## Deployment Architecture
+
+```
+Traditional Deployment:
+    Single Host
+        │
+        ├─ AquilaTrace API
+        ├─ PostgreSQL
+        ├─ Redis
+        └─ MongoDB
+
+Docker Deployment:
+    Docker Host
+        ├─ aquila-trace container
+        ├─ postgres container
+        ├─ redis container
+        └─ mongodb container
+
+Kubernetes Deployment:
+    K8s Cluster
+        ├─ API Pods (3+ replicas)
+        ├─ StatefulSet PostgreSQL
+        ├─ StatefulSet Redis
+        ├─ ConfigMaps
+        ├─ Secrets
+        └─ Services/Ingress
+
+Distributed Deployment:
+    Load Balancer
+        ├─ API Gateway
+        ├─ API Service (scaled)
+        ├─ Database Replication
+        ├─ Cache Cluster
+        └─ Message Queue
+```
+
+---
+
+
